@@ -25,6 +25,8 @@ public class CalibScript : MonoBehaviour
 
     const int th = 50;
 
+    private ManageScript ms;
+
 
     // Start is called before the first frame update
     void Start()
@@ -38,11 +40,22 @@ public class CalibScript : MonoBehaviour
         this.left = 0.0f;
         this.rightCounter = 0;
         this.leftCounter = 0;
+
+        this.ms = GetComponent<ManageScript>();
+    }
+
+    void Forward()
+    {
+        var pos = this.cube.transform.position;
+        pos.z += 0.01f;
+        this.cube.transform.position = pos;
     }
 
     // Update is called once per frame
     void Update()
     {
+        if(this.ms.state != ManageScript.GameState.Play) return;
+        Forward();
         if(0.8 <= this.right) {
             this.rightCounter++;
             this.leftCounter--;
@@ -50,7 +63,7 @@ public class CalibScript : MonoBehaviour
 
             if(th <= this.rightCounter) {
                 var pos = this.cube.transform.position;
-                if(pos.x < 9.0f) {
+                if(pos.x < 19.0f) {
                     pos.x += 1.0f;
                     this.cube.transform.position = pos;
                     Debug.Log("MOVE RIGHT!!!!!!!!!!!!");
@@ -68,7 +81,7 @@ public class CalibScript : MonoBehaviour
             if (th <= this.leftCounter)
             {
                 var pos = this.cube.transform.position;
-                if(-9.0f < pos.x) {
+                if(-19.0f < pos.x) {
                     pos.x -= 1.0f;
                     this.cube.transform.position = pos;
                     Debug.Log("MOVE LEFT!!!!!!!!!!!!");
@@ -82,9 +95,20 @@ public class CalibScript : MonoBehaviour
         this.leftCounterText.text = this.leftCounter.ToString();
     }
 
+    public void StartCalibration()
+    {
+        this.client.Send("/museUnity", "start");
+        Debug.Log("sent /museUnity, start");
+    }
+
+    public void StopCalibration() 
+    {
+        this.client.Send("/museUnity", "end");
+        Debug.Log("sent /museUnity, end");
+    }
+
     public void OnClick() {
-        this.client.Send("/museUnity/start", 1);
-        Debug.Log("OnClick!");
+        StartCalibration();
     }
 
     public void OnDataReceived(Message msg) 
@@ -95,6 +119,7 @@ public class CalibScript : MonoBehaviour
             // 暗黙の右キャリブレ
             if ((string)values[0] == "start")
             {
+                this.ms.state = ManageScript.GameState.Calibration;
                 Debug.Log("Calibration Start!");
             }
             if ((string)values[0] == "right")
@@ -111,6 +136,7 @@ public class CalibScript : MonoBehaviour
             }
             else if((string)values[0] == "predStart") 
             {
+                this.ms.state = ManageScript.GameState.Play;
                 Debug.Log("Predict start!");
             }
             else if ((string)values[0] == "predEnd")
@@ -128,14 +154,6 @@ public class CalibScript : MonoBehaviour
             Debug.Log("1: "+values[1]);
             this.right = (float)values[0];
             this.left = (float)values[1];
-            /*
-            if(values[0] is float[]) {
-                var t= (float[])values[0];
-                Debug.Log(string.Format("rV: {0}, lV: {1}", t[0], t[1]));
-            } else {
-                Debug.Log("違った...");
-            }
-            */
         }
     } 
 }
